@@ -1,26 +1,21 @@
+import { MongoClient } from 'mongodb';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
-  return NextResponse.json(
-    { message: "hello world" },
-    {
-      headers: {
-        'Access-Control-Allow-Origin': '*', // Allows your React app to connect
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    }
-  );
-}
+const uri = process.env.MONGODB_URI!;
+const client = new MongoClient(uri);
 
-// Handle preflight requests
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
+export async function GET() {
+  try {
+    await client.connect();
+    const database = client.db('test_db');
+    const collection = database.collection('test_collection');
+    
+    const data = await collection.find({}).toArray();
+    
+    return NextResponse.json({ status: "Success", data });
+  } catch (error) {
+    return NextResponse.json({ status: "Error", message: error.message }, { status: 500 });
+  } finally {
+    await client.close();
+  }
 }
